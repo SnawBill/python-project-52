@@ -3,6 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView, LogoutView
 from django.db.models.deletion import ProtectedError
+from django_filters.views import FilterView
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import (
@@ -22,6 +23,7 @@ from task_manager.forms import (
     UserLoginForm,
     UserUpdateForm,
 )
+from task_manager.filters import TaskFilter
 from task_manager.models import Label, Status, Task
 
 
@@ -225,11 +227,14 @@ class LabelDeleteView(LoginRequiredMixin, DeleteView):
         return super().form_valid(form)
 
 
-class TaskListView(LoginRequiredMixin, ListView):
+class TaskListView(LoginRequiredMixin, FilterView):
     model = Task
+    filterset_class = TaskFilter
     template_name = "tasks/task_list.html"
     context_object_name = "tasks"
-    ordering = ("id",)
+
+    def get_queryset(self):
+        return super().get_queryset().order_by("id")
 
 
 class TaskCreateView(LoginRequiredMixin, CreateView):

@@ -339,6 +339,86 @@ class TaskFlowTest(TestCase):
         self.assertTrue("уже существует" in content or "already exists" in content)
 
 
+class TaskFilterTest(TestCase):
+    def setUp(self):
+        self.author = User.objects.create_user(
+            username="author",
+            password="StrongPass123",
+        )
+        self.executor_1 = User.objects.create_user(
+            username="executor1",
+            password="StrongPass123",
+        )
+        self.executor_2 = User.objects.create_user(
+            username="executor2",
+            password="StrongPass123",
+        )
+        self.other_author = User.objects.create_user(
+            username="otherauthor",
+            password="StrongPass123",
+        )
+        self.status_new = Status.objects.create(name="new")
+        self.status_done = Status.objects.create(name="done")
+        self.label_bug = Label.objects.create(name="bug")
+        self.label_feature = Label.objects.create(name="feature")
+
+        self.task_a = Task.objects.create(
+            name="Task A",
+            description="",
+            status=self.status_new,
+            author=self.author,
+            executor=self.executor_1,
+        )
+        self.task_a.labels.add(self.label_bug)
+
+        self.task_b = Task.objects.create(
+            name="Task B",
+            description="",
+            status=self.status_done,
+            author=self.other_author,
+            executor=self.executor_2,
+        )
+        self.task_b.labels.add(self.label_feature)
+
+    def test_filter_form_labels_are_present(self):
+        self.client.login(username="author", password="StrongPass123")
+        response = self.client.get(reverse("tasks_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Статус")
+        self.assertContains(response, "Исполнитель")
+        self.assertContains(response, "Метка")
+        self.assertContains(response, "Только свои задачи")
+
+    def test_filter_by_status(self):
+        self.client.login(username="author", password="StrongPass123")
+        response = self.client.get(reverse("tasks_list"), {"status": self.status_done.pk})
+
+        self.assertContains(response, "Task B")
+        self.assertNotContains(response, "Task A")
+
+    def test_filter_by_executor(self):
+        self.client.login(username="author", password="StrongPass123")
+        response = self.client.get(reverse("tasks_list"), {"executor": self.executor_1.pk})
+
+        self.assertContains(response, "Task A")
+        self.assertNotContains(response, "Task B")
+
+    def test_filter_by_label(self):
+        self.client.login(username="author", password="StrongPass123")
+        response = self.client.get(reverse("tasks_list"), {"labels": self.label_feature.pk})
+
+        self.assertContains(response, "Task B")
+        self.assertNotContains(response, "Task A")
+
+    def test_filter_only_self_tasks(self):
+        self.client.login(username="author", password="StrongPass123")
+        response = self.client.get(reverse("tasks_list"), {"self_tasks": "on"})
+
+        self.assertContains(response, "Task A")
+        self.assertNotContains(response, "Task B")
+
+
 class LabelFlowTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
