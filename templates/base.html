@@ -17,20 +17,36 @@
       <div class="collapse navbar-collapse" id="mainNavbar">
         <ul class="navbar-nav ms-auto mb-2 mb-md-0">
           <li class="nav-item">
-            <a class="nav-link" href="#">{% translate "Пользователи" %}</a>
+            <a class="nav-link" href="{% url 'users_list' %}">{% translate "Пользователи" %}</a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">{% translate "Вход" %}</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">{% translate "Регистрация" %}</a>
-          </li>
+          {% if user.is_authenticated %}
+            <li class="nav-item">
+              <form method="post" action="{% url 'logout' %}" class="d-flex align-items-center h-100">
+                {% csrf_token %}
+                <button type="submit" class="nav-link btn btn-link text-decoration-none p-0">{% translate "Выход" %}</button>
+              </form>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'login' %}">{% translate "Вход" %}</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'users_create' %}">{% translate "Регистрация" %}</a>
+            </li>
+          {% endif %}
         </ul>
       </div>
     </div>
   </nav>
 
   <main class="flex-grow-1">
+    <div class="container mt-3">
+      {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}" role="alert">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
     {% block content %}{% endblock %}
   </main>
 

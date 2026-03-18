@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Пользователи" %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-4">{% translate "Пользователи" %}</h1>
+  <table class="table table-striped table-bordered">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>{% translate "Имя пользователя" %}</th>
+        <th>{% translate "Полное имя" %}</th>
+        <th>{% translate "Дата создания" %}</th>
+        <th>{% translate "Действия" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user_obj in users %}
+      <tr>
+        <td>{{ user_obj.id }}</td>
+        <td>{{ user_obj.username }}</td>
+        <td>{{ user_obj.get_full_name }}</td>
+        <td>{{ user_obj.date_joined|date:"d.m.Y H:i" }}</td>
+        <td>
+          <a href="{% url 'users_update' user_obj.pk %}">{% translate "Изменить" %}</a>
+          <br>
+          <a href="{% url 'users_delete' user_obj.pk %}">{% translate "Удалить" %}</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
