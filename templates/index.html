@@ -1,11 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>Hello!</h1>
-</body>
-</html>
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Менеджер задач" %}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="p-5 mb-4 bg-light border rounded-3">
+    <div class="container-fluid py-3">
+      <h1 class="display-5 fw-bold">{% translate "Менеджер задач" %}</h1>
+      <p class="col-md-8 fs-5">{% translate "Добро пожаловать в учебное приложение." %}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
