@@ -157,7 +157,10 @@ class StatusFlowTest(TestCase):
 
     def test_statuses_list_requires_auth(self):
         response = self.client.get(reverse("statuses_list"))
-        self.assertRedirects(response, f"{reverse('login')}?next={reverse('statuses_list')}")
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={reverse('statuses_list')}",
+        )
 
     def test_statuses_list_for_authorized_user(self):
         self.client.login(username="mike", password="StrongPass123")
@@ -243,7 +246,10 @@ class TaskFlowTest(TestCase):
 
     def test_tasks_list_requires_auth(self):
         response = self.client.get(reverse("tasks_list"))
-        self.assertRedirects(response, f"{reverse('login')}?next={reverse('tasks_list')}")
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={reverse('tasks_list')}",
+        )
 
     def test_tasks_list_for_authorized_user(self):
         self.client.login(username="author", password="StrongPass123")
@@ -274,10 +280,16 @@ class TaskFlowTest(TestCase):
         self.assertEqual(created_task.status, self.status)
 
     def test_task_detail_requires_auth(self):
-        response = self.client.get(reverse("tasks_detail", kwargs={"pk": self.task.pk}))
+        response = self.client.get(
+            reverse("tasks_detail", kwargs={"pk": self.task.pk})
+        )
+        expected_next_url = reverse(
+            "tasks_detail",
+            kwargs={"pk": self.task.pk},
+        )
         self.assertRedirects(
             response,
-            f"{reverse('login')}?next={reverse('tasks_detail', kwargs={'pk': self.task.pk})}",
+            f"{reverse('login')}?next={expected_next_url}",
         )
 
     def test_update_task(self):
@@ -336,7 +348,9 @@ class TaskFlowTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf-8")
-        self.assertTrue("уже существует" in content or "already exists" in content)
+        self.assertTrue(
+            "уже существует" in content or "already exists" in content
+        )
 
 
 class TaskFilterTest(TestCase):
@@ -392,21 +406,30 @@ class TaskFilterTest(TestCase):
 
     def test_filter_by_status(self):
         self.client.login(username="author", password="StrongPass123")
-        response = self.client.get(reverse("tasks_list"), {"status": self.status_done.pk})
+        response = self.client.get(
+            reverse("tasks_list"),
+            {"status": self.status_done.pk},
+        )
 
         self.assertContains(response, "Task B")
         self.assertNotContains(response, "Task A")
 
     def test_filter_by_executor(self):
         self.client.login(username="author", password="StrongPass123")
-        response = self.client.get(reverse("tasks_list"), {"executor": self.executor_1.pk})
+        response = self.client.get(
+            reverse("tasks_list"),
+            {"executor": self.executor_1.pk},
+        )
 
         self.assertContains(response, "Task A")
         self.assertNotContains(response, "Task B")
 
     def test_filter_by_label(self):
         self.client.login(username="author", password="StrongPass123")
-        response = self.client.get(reverse("tasks_list"), {"labels": self.label_feature.pk})
+        response = self.client.get(
+            reverse("tasks_list"),
+            {"labels": self.label_feature.pk},
+        )
 
         self.assertContains(response, "Task B")
         self.assertNotContains(response, "Task A")
@@ -438,7 +461,10 @@ class LabelFlowTest(TestCase):
 
     def test_labels_list_requires_auth(self):
         response = self.client.get(reverse("labels_list"))
-        self.assertRedirects(response, f"{reverse('login')}?next={reverse('labels_list')}")
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={reverse('labels_list')}",
+        )
 
     def test_create_label(self):
         self.client.login(username="mike", password="StrongPass123")
@@ -497,4 +523,6 @@ class LabelFlowTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         content = response.content.decode("utf-8")
-        self.assertTrue("уже существует" in content or "already exists" in content)
+        self.assertTrue(
+            "уже существует" in content or "already exists" in content
+        )

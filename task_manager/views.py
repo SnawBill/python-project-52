@@ -280,7 +280,10 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
 
 class TaskDeletePermissionMixin(UserPassesTestMixin):
     def test_func(self):
-        return self.request.user.is_authenticated and self.get_object().author_id == self.request.user.id
+        return (
+            self.request.user.is_authenticated
+            and self.get_object().author_id == self.request.user.id
+        )
 
     def handle_no_permission(self):
         messages.error(self.request, "Задачу может удалить только ее автор")

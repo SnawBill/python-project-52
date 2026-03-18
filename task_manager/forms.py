@@ -28,7 +28,9 @@ class UserUpdateForm(UserCreateForm):
             pk=self.instance.pk
         )
         if queryset.exists():
-            raise ValidationError(_("A user with that username already exists."))
+            raise ValidationError(
+                _("A user with that username already exists.")
+            )
         return username
 
 
