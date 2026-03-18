@@ -15,6 +15,7 @@ class HomePageTest(TestCase):
         self.assertContains(response, "Пользователи")
         self.assertContains(response, "Статусы")
         self.assertContains(response, "Задачи")
+        self.assertContains(response, "Метки")
         self.assertContains(response, "Вход")
         self.assertContains(response, "Регистрация")
 
@@ -331,6 +332,87 @@ class TaskFlowTest(TestCase):
                 "executor": self.executor.pk,
                 "labels": [self.label.pk],
             },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertTrue("уже существует" in content or "already exists" in content)
+
+
+class LabelFlowTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="mike",
+            password="StrongPass123",
+        )
+        self.status = Status.objects.create(name="new")
+        self.label = Label.objects.create(name="bug")
+        self.task = Task.objects.create(
+            name="Task for label",
+            description="",
+            status=self.status,
+            author=self.user,
+            executor=self.user,
+        )
+        self.task.labels.add(self.label)
+
+    def test_labels_list_requires_auth(self):
+        response = self.client.get(reverse("labels_list"))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('labels_list')}")
+
+    def test_create_label(self):
+        self.client.login(username="mike", password="StrongPass123")
+        response = self.client.post(
+            reverse("labels_create"),
+            {"name": "feature"},
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("labels_list"))
+        self.assertContains(response, "Метка успешно создана")
+        self.assertTrue(Label.objects.filter(name="feature").exists())
+
+    def test_update_label(self):
+        self.client.login(username="mike", password="StrongPass123")
+        response = self.client.post(
+            reverse("labels_update", kwargs={"pk": self.label.pk}),
+            {"name": "bugfix"},
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("labels_list"))
+        self.assertContains(response, "Метка успешно изменена")
+        self.label.refresh_from_db()
+        self.assertEqual(self.label.name, "bugfix")
+
+    def test_cannot_delete_linked_label(self):
+        self.client.login(username="mike", password="StrongPass123")
+        response = self.client.post(
+            reverse("labels_delete", kwargs={"pk": self.label.pk}),
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("labels_list"))
+        self.assertContains(response, "Невозможно удалить метку")
+        self.assertTrue(Label.objects.filter(pk=self.label.pk).exists())
+
+    def test_delete_unlinked_label(self):
+        self.client.login(username="mike", password="StrongPass123")
+        free_label = Label.objects.create(name="free")
+        response = self.client.post(
+            reverse("labels_delete", kwargs={"pk": free_label.pk}),
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("labels_list"))
+        self.assertContains(response, "Метка успешно удалена")
+        self.assertFalse(Label.objects.filter(pk=free_label.pk).exists())
+
+    def test_label_unique_validation(self):
+        self.client.login(username="mike", password="StrongPass123")
+        response = self.client.post(
+            reverse("labels_create"),
+            {"name": "bug"},
         )
 
         self.assertEqual(response.status_code, 200)

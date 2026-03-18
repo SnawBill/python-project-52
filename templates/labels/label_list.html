@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Метки" %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">{% translate "Метки" %}</h1>
+    <a class="btn btn-primary" href="{% url 'labels_create' %}">{% translate "Создать метку" %}</a>
+  </div>
+
+  <table class="table table-striped table-bordered">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>{% translate "Имя" %}</th>
+        <th>{% translate "Дата создания" %}</th>
+        <th>{% translate "Действия" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for label in labels %}
+      <tr>
+        <td>{{ label.id }}</td>
+        <td>{{ label.name }}</td>
+        <td>{{ label.created_at|date:"d.m.Y H:i" }}</td>
+        <td>
+          <a href="{% url 'labels_update' label.pk %}">{% translate "Изменить" %}</a>
+          <br>
+          <a href="{% url 'labels_delete' label.pk %}">{% translate "Удалить" %}</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
