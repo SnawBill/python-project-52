@@ -2,6 +2,8 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
+from task_manager.models import Status
+
 
 class HomePageTest(TestCase):
     def test_home_page_contains_required_links(self):
@@ -11,6 +13,7 @@ class HomePageTest(TestCase):
         self.assertTemplateUsed(response, "index.html")
         self.assertContains(response, "Менеджер задач")
         self.assertContains(response, "Пользователи")
+        self.assertContains(response, "Статусы")
         self.assertContains(response, "Вход")
         self.assertContains(response, "Регистрация")
 
@@ -120,3 +123,72 @@ class UserFlowTest(TestCase):
         self.assertRedirects(response, reverse("users_list"))
         self.assertContains(response, "Пользователь успешно удален")
         self.assertFalse(User.objects.filter(pk=self.user.pk).exists())
+
+
+class StatusFlowTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="mike",
+            password="StrongPass123",
+        )
+        self.status = Status.objects.create(name="новый")
+
+    def test_statuses_list_requires_auth(self):
+        response = self.client.get(reverse("statuses_list"))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('statuses_list')}")
+
+    def test_statuses_list_for_authorized_user(self):
+        self.client.login(username="mike", password="StrongPass123")
+        response = self.client.get(reverse("statuses_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "новый")
+
+    def test_create_status(self):
+        self.client.login(username="mike", password="StrongPass123")
+        response = self.client.post(
+            reverse("statuses_create"),
+            {"name": "в работе"},
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("statuses_list"))
+        self.assertContains(response, "Статус успешно создан")
+        self.assertTrue(Status.objects.filter(name="в работе").exists())
+
+    def test_update_status(self):
+        self.client.login(username="mike", password="StrongPass123")
+        response = self.client.post(
+            reverse("statuses_update", kwargs={"pk": self.status.pk}),
+            {"name": "на тестировании"},
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("statuses_list"))
+        self.assertContains(response, "Статус успешно изменен")
+        self.status.refresh_from_db()
+        self.assertEqual(self.status.name, "на тестировании")
+
+    def test_delete_status(self):
+        self.client.login(username="mike", password="StrongPass123")
+        response = self.client.post(
+            reverse("statuses_delete", kwargs={"pk": self.status.pk}),
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("statuses_list"))
+        self.assertContains(response, "Статус успешно удален")
+        self.assertFalse(Status.objects.filter(pk=self.status.pk).exists())
+
+    def test_status_unique_validation(self):
+        self.client.login(username="mike", password="StrongPass123")
+        response = self.client.post(
+            reverse("statuses_create"),
+            {"name": "новый"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertTrue(
+            "уже существует" in content or "already exists" in content
+        )

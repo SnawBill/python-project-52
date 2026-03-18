@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from task_manager.models import Status
+
 
 class UserCreateForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
@@ -33,3 +35,13 @@ class UserUpdateForm(UserCreateForm):
 class UserLoginForm(AuthenticationForm):
     username = forms.CharField(label=_("Имя пользователя"))
     password = forms.CharField(label=_("Пароль"), widget=forms.PasswordInput)
+
+
+class StatusForm(forms.ModelForm):
+    class Meta:
+        model = Status
+        fields = ("name",)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["name"].label = _("Имя")

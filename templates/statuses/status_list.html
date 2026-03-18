@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Статусы" %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">{% translate "Статусы" %}</h1>
+    <a class="btn btn-primary" href="{% url 'statuses_create' %}">{% translate "Создать статус" %}</a>
+  </div>
+
+  <table class="table table-striped table-bordered">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>{% translate "Имя" %}</th>
+        <th>{% translate "Дата создания" %}</th>
+        <th>{% translate "Действия" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for status in statuses %}
+      <tr>
+        <td>{{ status.id }}</td>
+        <td>{{ status.name }}</td>
+        <td>{{ status.created_at|date:"d.m.Y H:i" }}</td>
+        <td>
+          <a href="{% url 'statuses_update' status.pk %}">{% translate "Изменить" %}</a>
+          <br>
+          <a href="{% url 'statuses_delete' status.pk %}">{% translate "Удалить" %}</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
