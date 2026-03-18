@@ -39,7 +39,11 @@ urlpatterns = [
         name="statuses_delete",
     ),
     path("labels/", views.LabelListView.as_view(), name="labels_list"),
-    path("labels/create/", views.LabelCreateView.as_view(), name="labels_create"),
+    path(
+        "labels/create/",
+        views.LabelCreateView.as_view(),
+        name="labels_create",
+    ),
     path(
         "labels/<int:pk>/update/",
         views.LabelUpdateView.as_view(),
@@ -52,7 +56,11 @@ urlpatterns = [
     ),
     path("tasks/", views.TaskListView.as_view(), name="tasks_list"),
     path("tasks/create/", views.TaskCreateView.as_view(), name="tasks_create"),
-    path("tasks/<int:pk>/", views.TaskDetailView.as_view(), name="tasks_detail"),
+    path(
+        "tasks/<int:pk>/",
+        views.TaskDetailView.as_view(),
+        name="tasks_detail",
+    ),
     path(
         "tasks/<int:pk>/update/",
         views.TaskUpdateView.as_view(),
