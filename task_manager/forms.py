@@ -59,6 +59,9 @@ class TaskForm(forms.ModelForm):
         self.fields["status"].label = _("Статус")
         self.fields["executor"].label = _("Исполнитель")
         self.fields["labels"].label = _("Метки")
+        self.fields["executor"].label_from_instance = (
+            lambda user: user.get_full_name().strip() or user.username
+        )
 
 
 class LabelForm(forms.ModelForm):
