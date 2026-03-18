@@ -5,10 +5,23 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 
-from task_manager.forms import StatusForm, UserCreateForm, UserLoginForm, UserUpdateForm
-from task_manager.models import Status
+from task_manager.forms import (
+    StatusForm,
+    TaskForm,
+    UserCreateForm,
+    UserLoginForm,
+    UserUpdateForm,
+)
+from task_manager.models import Status, Task
 
 
 class IndexView(TemplateView):
@@ -72,8 +85,13 @@ class UserDeleteView(LoginRequiredMixin, UserPermissionMixin, DeleteView):
     success_url = reverse_lazy("users_list")
 
     def form_valid(self, form):
-        messages.success(self.request, "Пользователь успешно удален")
-        return super().form_valid(form)
+        try:
+            response = super().form_valid(form)
+            messages.success(self.request, "Пользователь успешно удален")
+            return response
+        except ProtectedError:
+            messages.error(self.request, "Невозможно удалить пользователя")
+            return redirect("users_list")
 
 
 class UserLoginView(LoginView):
@@ -150,3 +168,70 @@ class StatusDeleteView(LoginRequiredMixin, DeleteView):
         except ProtectedError:
             messages.error(self.request, "Невозможно удалить статус")
             return redirect("statuses_list")
+
+
+class TaskListView(LoginRequiredMixin, ListView):
+    model = Task
+    template_name = "tasks/task_list.html"
+    context_object_name = "tasks"
+    ordering = ("id",)
+
+
+class TaskCreateView(LoginRequiredMixin, CreateView):
+    model = Task
+    form_class = TaskForm
+    template_name = "tasks/task_form.html"
+    success_url = reverse_lazy("tasks_list")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Создать задачу"
+        context["button_text"] = "Создать"
+        return context
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        messages.success(self.request, "Задача успешно создана")
+        return super().form_valid(form)
+
+
+class TaskDetailView(LoginRequiredMixin, DetailView):
+    model = Task
+    template_name = "tasks/task_detail.html"
+    context_object_name = "task"
+
+
+class TaskUpdateView(LoginRequiredMixin, UpdateView):
+    model = Task
+    form_class = TaskForm
+    template_name = "tasks/task_form.html"
+    success_url = reverse_lazy("tasks_list")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Изменение задачи"
+        context["button_text"] = "Изменить"
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, "Задача успешно изменена")
+        return super().form_valid(form)
+
+
+class TaskDeletePermissionMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_authenticated and self.get_object().author_id == self.request.user.id
+
+    def handle_no_permission(self):
+        messages.error(self.request, "Задачу может удалить только ее автор")
+        return redirect("tasks_list")
+
+
+class TaskDeleteView(LoginRequiredMixin, TaskDeletePermissionMixin, DeleteView):
+    model = Task
+    template_name = "tasks/task_confirm_delete.html"
+    success_url = reverse_lazy("tasks_list")
+
+    def form_valid(self, form):
+        messages.success(self.request, "Задача успешно удалена")
+        return super().form_valid(form)

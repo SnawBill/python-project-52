@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from task_manager.models import Status
+from task_manager.models import Task
 
 
 class UserCreateForm(UserCreationForm):
@@ -45,3 +46,17 @@ class StatusForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["name"].label = _("Имя")
+
+
+class TaskForm(forms.ModelForm):
+    class Meta:
+        model = Task
+        fields = ("name", "description", "status", "executor", "labels")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["name"].label = _("Имя")
+        self.fields["description"].label = _("Описание")
+        self.fields["status"].label = _("Статус")
+        self.fields["executor"].label = _("Исполнитель")
+        self.fields["labels"].label = _("Метки")

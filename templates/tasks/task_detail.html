@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ task.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-4">{{ task.name }}</h1>
+  <table class="table table-bordered">
+    <tbody>
+      <tr>
+        <th>ID</th>
+        <td>{{ task.id }}</td>
+      </tr>
+      <tr>
+        <th>{% translate "Имя" %}</th>
+        <td>{{ task.name }}</td>
+      </tr>
+      <tr>
+        <th>{% translate "Описание" %}</th>
+        <td>{{ task.description }}</td>
+      </tr>
+      <tr>
+        <th>{% translate "Статус" %}</th>
+        <td>{{ task.status.name }}</td>
+      </tr>
+      <tr>
+        <th>{% translate "Автор" %}</th>
+        <td>{{ task.author.username }}</td>
+      </tr>
+      <tr>
+        <th>{% translate "Исполнитель" %}</th>
+        <td>{% if task.executor %}{{ task.executor.username }}{% endif %}</td>
+      </tr>
+      <tr>
+        <th>{% translate "Метки" %}</th>
+        <td>
+          {% for label in task.labels.all %}
+            {{ label.name }}{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        </td>
+      </tr>
+      <tr>
+        <th>{% translate "Дата создания" %}</th>
+        <td>{{ task.created_at|date:"d.m.Y H:i" }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from task_manager.models import Status
+from task_manager.models import Label, Status, Task
 
 
 class HomePageTest(TestCase):
@@ -14,6 +14,7 @@ class HomePageTest(TestCase):
         self.assertContains(response, "Менеджер задач")
         self.assertContains(response, "Пользователи")
         self.assertContains(response, "Статусы")
+        self.assertContains(response, "Задачи")
         self.assertContains(response, "Вход")
         self.assertContains(response, "Регистрация")
 
@@ -124,6 +125,26 @@ class UserFlowTest(TestCase):
         self.assertContains(response, "Пользователь успешно удален")
         self.assertFalse(User.objects.filter(pk=self.user.pk).exists())
 
+    def test_cannot_delete_user_linked_to_task(self):
+        status = Status.objects.create(name="new")
+        Task.objects.create(
+            name="task-for-user",
+            description="",
+            status=status,
+            author=self.user,
+            executor=self.user,
+        )
+        self.client.login(username="mike", password="StrongPass123")
+
+        response = self.client.post(
+            reverse("users_delete", kwargs={"pk": self.user.pk}),
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("users_list"))
+        self.assertContains(response, "Невозможно удалить пользователя")
+        self.assertTrue(User.objects.filter(pk=self.user.pk).exists())
+
 
 class StatusFlowTest(TestCase):
     def setUp(self):
@@ -192,3 +213,126 @@ class StatusFlowTest(TestCase):
         self.assertTrue(
             "уже существует" in content or "already exists" in content
         )
+
+
+class TaskFlowTest(TestCase):
+    def setUp(self):
+        self.author = User.objects.create_user(
+            username="author",
+            password="StrongPass123",
+        )
+        self.executor = User.objects.create_user(
+            username="executor",
+            password="StrongPass123",
+        )
+        self.other_user = User.objects.create_user(
+            username="other",
+            password="StrongPass123",
+        )
+        self.status = Status.objects.create(name="в работе")
+        self.label = Label.objects.create(name="bug")
+        self.task = Task.objects.create(
+            name="Task One",
+            description="First task",
+            status=self.status,
+            author=self.author,
+            executor=self.executor,
+        )
+        self.task.labels.add(self.label)
+
+    def test_tasks_list_requires_auth(self):
+        response = self.client.get(reverse("tasks_list"))
+        self.assertRedirects(response, f"{reverse('login')}?next={reverse('tasks_list')}")
+
+    def test_tasks_list_for_authorized_user(self):
+        self.client.login(username="author", password="StrongPass123")
+        response = self.client.get(reverse("tasks_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Task One")
+
+    def test_create_task(self):
+        self.client.login(username="author", password="StrongPass123")
+        response = self.client.post(
+            reverse("tasks_create"),
+            {
+                "name": "Task Two",
+                "description": "Created from test",
+                "status": self.status.pk,
+                "executor": self.executor.pk,
+                "labels": [self.label.pk],
+            },
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("tasks_list"))
+        self.assertContains(response, "Задача успешно создана")
+        created_task = Task.objects.get(name="Task Two")
+        self.assertEqual(created_task.author, self.author)
+        self.assertEqual(created_task.executor, self.executor)
+        self.assertEqual(created_task.status, self.status)
+
+    def test_task_detail_requires_auth(self):
+        response = self.client.get(reverse("tasks_detail", kwargs={"pk": self.task.pk}))
+        self.assertRedirects(
+            response,
+            f"{reverse('login')}?next={reverse('tasks_detail', kwargs={'pk': self.task.pk})}",
+        )
+
+    def test_update_task(self):
+        self.client.login(username="author", password="StrongPass123")
+        response = self.client.post(
+            reverse("tasks_update", kwargs={"pk": self.task.pk}),
+            {
+                "name": "Task One Updated",
+                "description": "Updated description",
+                "status": self.status.pk,
+                "executor": self.executor.pk,
+                "labels": [self.label.pk],
+            },
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("tasks_list"))
+        self.assertContains(response, "Задача успешно изменена")
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.name, "Task One Updated")
+
+    def test_only_author_can_delete_task(self):
+        self.client.login(username="other", password="StrongPass123")
+        response = self.client.post(
+            reverse("tasks_delete", kwargs={"pk": self.task.pk}),
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("tasks_list"))
+        self.assertContains(response, "Задачу может удалить только ее автор")
+        self.assertTrue(Task.objects.filter(pk=self.task.pk).exists())
+
+    def test_author_can_delete_task(self):
+        self.client.login(username="author", password="StrongPass123")
+        response = self.client.post(
+            reverse("tasks_delete", kwargs={"pk": self.task.pk}),
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("tasks_list"))
+        self.assertContains(response, "Задача успешно удалена")
+        self.assertFalse(Task.objects.filter(pk=self.task.pk).exists())
+
+    def test_task_unique_validation(self):
+        self.client.login(username="author", password="StrongPass123")
+        response = self.client.post(
+            reverse("tasks_create"),
+            {
+                "name": "Task One",
+                "description": "Duplicate name",
+                "status": self.status.pk,
+                "executor": self.executor.pk,
+                "labels": [self.label.pk],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode("utf-8")
+        self.assertTrue("уже существует" in content or "already exists" in content)
