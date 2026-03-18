@@ -116,3 +116,34 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "/login/"
+
+ROLLBAR_ACCESS_TOKEN = os.getenv("ROLLBAR_ACCESS_TOKEN", "")
+ROLLBAR_ENVIRONMENT = os.getenv("ROLLBAR_ENVIRONMENT", "development")
+
+if ROLLBAR_ACCESS_TOKEN:
+    ROLLBAR = {
+        "access_token": ROLLBAR_ACCESS_TOKEN,
+        "environment": ROLLBAR_ENVIRONMENT,
+        "root": str(BASE_DIR),
+    }
+    MIDDLEWARE.append("rollbar.contrib.django.middleware.RollbarNotifierMiddleware")
+
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "rollbar": {
+                "level": "ERROR",
+                "class": "rollbar.logger.RollbarHandler",
+                "access_token": ROLLBAR_ACCESS_TOKEN,
+                "environment": ROLLBAR_ENVIRONMENT,
+            },
+        },
+        "loggers": {
+            "django.request": {
+                "handlers": ["rollbar"],
+                "level": "ERROR",
+                "propagate": True,
+            },
+        },
+    }
